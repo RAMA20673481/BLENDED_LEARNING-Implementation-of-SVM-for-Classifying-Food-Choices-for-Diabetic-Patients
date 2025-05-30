@@ -1,6 +1,6 @@
-# BLENDED LEARNING
-# Implementation of Support Vector Machine for Classifying Food Choices for Diabetic Patients
-
+## BLENDED LEARNING
+## Implementation of Support Vector Machine for Classifying Food Choices for Diabetic Patients
+### DATE:08-05-2025
 ## AIM:
 To implement a Support Vector Machine (SVM) model to classify food items and optimize hyperparameters for better accuracy.
 
@@ -9,105 +9,117 @@ To implement a Support Vector Machine (SVM) model to classify food items and opt
 2. Anaconda – Python 3.7 Installation / Jupyter notebook
 
 ## Algorithm
-1. **Load Data**: Import the dataset and separate features (X) and target (y).
 
-2. **Split Data**: Divide into training (80%) and testing (20%) sets.
+## Algorithm
 
-3. **Scale Features**: Standardize the features using `StandardScaler`.
-
-4. **Define SVM Model**: Initialize a Support Vector Machine (SVM) classifier.
-
-5. **Hyperparameter Grid**: Define a range of values for `C`, `kernel`, and `gamma` for tuning.
-
-6. **Grid Search**: Perform Grid Search with Cross-Validation to find the best hyperparameters.
-
-7. **Results Visualization**: Create a heatmap to show the mean accuracy for different combinations of hyperparameters.
-
-8. **Best Model**: Extract the best model with optimal hyperparameters.
-
-9. **Make Predictions**: Use the best model to predict on the test set.
-
-10. **Evaluate Model**: Calculate accuracy and print the classification report.
+1.  **Load Data:** Read `food_items_binary.csv` into a pandas DataFrame.
+2.  **Explore (Optional):** Display initial rows and column names.
+3.  **Select Features & Target:** Define features (Calories, Fat, Sat. Fat, Sugars, Fiber, Protein) and the binary target ('class'). Separate into `X` and `y`.
+4.  **Split Data:** Use `train_test_split` (e.g., 70% train, 30% test, `random_state=42`).
+5.  **Scale Features:** Initialize and fit `StandardScaler` on training data, then transform both training and testing sets.
+6.  **Tune & Train SVM:**
+    * Initialize `SVC()`.
+    * Define `param_grid` for 'C', 'kernel' ('linear', 'rbf'), and 'gamma' ('scale', 'auto').
+    * Use `GridSearchCV` (with `cv=5`, `scoring='accuracy'`) to find the best hyperparameters by fitting on the training data.
+    * Extract the `best_estimator_` and print `best_params_`.
+7.  **Evaluate Model:**
+    * Predict on the test set using `best_model.predict(X_test)`.
+    * Calculate and print `accuracy_score`.
+    * Print `classification_report`.
+    * Generate and display a `confusion_matrix` using `seaborn.heatmap`.
+8.  **Result:** Conclude that the SVM model was successfully implemented and optimized for food classification.
 
 ## Program:
-
-Developed by: G.RAMANUJAM
-RegisterNumber: 212224240129
 ```
-Program to implement SVM for food classification for diabetic patients.
 
+Program to implement SVM for food classification for diabetic patients.
+Developed by: G Ramanujam
+RegisterNumber: 212224240129
+
+# Import necessary libraries
 import pandas as pd
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.svm import SVC
-from sklearn.metrics import classification_report, accuracy_score
-from sklearn.preprocessing import StandardScaler
 
-# Load your dataset
-data = pd.read_csv('food_items_binary.csv')  # Replace with your dataset file
+# Step 1: Load the dataset from the URL
+data = pd.read_csv('food_items_binary.csv')
 
-# Separate features and target
-X = data.drop(columns=['class'])  # Replace 'class' with your target column name
-y = data['class']
+# Step 2: Data Exploration
+# Display the first few rows and column names for verification
+print(data.head())
+print(data.columns)
 
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Step 3: Selecting Features and Target
+# Define relevant features and target column
+features = ['Calories', 'Total Fat', 'Saturated Fat', 'Sugars', 'Dietary Fiber', 'Protein']
+target = 'class'  # Assuming 'class' is binary (suitable or not suitable for diabetic patients)
 
-# Standardize the features
+X = data[features]
+y = data[target]
+
+# Step 4: Splitting Data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Step 5: Feature Scaling
 scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
 
+# Step 6: Model Training with Hyperparameter Tuning using GridSearchCV
 # Define the SVM model
 svm = SVC()
 
-# Define the hyperparameter grid
+# Set up hyperparameter grid for tuning
 param_grid = {
-    'C': [0.1, 1, 10],
-    'kernel': ['linear', 'rbf', 'poly'],
-    'gamma': ['scale', 'auto']
+    'C': [0.1, 1, 10, 100],              # Regularization parameter
+    'kernel': ['linear', 'rbf'],         # Kernel types
+    'gamma': ['scale', 'auto']           # Kernel coefficient for 'rbf'
 }
 
-# Perform Grid Search with Cross Validation
-grid_search = GridSearchCV(svm, param_grid, cv=5, scoring='accuracy', n_jobs=-1, return_train_score=True)
-grid_search.fit(X_train_scaled, y_train)
+# Initialize GridSearchCV
+grid_search = GridSearchCV(svm, param_grid, cv=5, scoring='accuracy')
+grid_search.fit(X_train, y_train)
 
-# Extract the results into a DataFrame
-results = pd.DataFrame(grid_search.cv_results_)
+# Extract the best model
+best_model = grid_search.best_estimator_
+print("Best Parameters:", grid_search.best_params_)
 
-# Pivot the results for a heatmap
-heatmap_data = results.pivot_table(index='param_kernel', columns='param_C', values='mean_test_score')
+# Step 7: Model Evaluation
+# Predicting on the test set using the best model
+y_pred = best_model.predict(X_test)
 
-# Plot the heatmap
-plt.figure(figsize=(10, 6))
-sns.heatmap(heatmap_data, annot=True, cmap='viridis', fmt=".3f")
-plt.title('Hyperparameter Tuning: Mean Test Accuracy')
-plt.xlabel('C')
-plt.ylabel('Kernel')
+# Calculate accuracy and print classification metrics
+print()
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+print("Classification Report:\n", classification_report(y_test, y_pred))
+
+# Confusion Matrix
+conf_matrix = confusion_matrix(y_test, y_pred)
+sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("Confusion Matrix")
 plt.show()
 
-# Evaluate the best model
-best_params = grid_search.best_params_
-best_model = grid_search.best_estimator_
-
-# Make predictions
-y_pred = best_model.predict(X_test_scaled)
-
-# Evaluate the model
-accuracy = accuracy_score(y_test, y_pred)
-report = classification_report(y_test, y_pred)
-
-# Display results
-print("Best Parameters:", best_params)
-print("Test Accuracy:", accuracy)
-print("Classification Report:\n", report)
 ```
 
 ## Output:
+### PREVIEW OF THE DATASET:
+![Screenshot 2025-05-14 205634](https://github.com/user-attachments/assets/cf7cceed-4200-4247-90be-1db3ae072d90)
 
-![Screenshot 2025-05-15 182235](https://github.com/user-attachments/assets/5cc89e15-c6ee-44f5-a788-f44c9001c0a1)
+### EXTRACTION OF BEST MODEL:
 
+![Screenshot 2025-05-14 205625](https://github.com/user-attachments/assets/b5a83984-6455-466f-afee-499a609490ad)
+
+### EVALUATION OF THE MODEL:
+### AND
+### CONFUSION MATRIX:
+![Screenshot 2025-05-14 205620](https://github.com/user-attachments/assets/f398fce0-c8b5-4472-a752-2847b30b293b)
 
 
 ## Result:
